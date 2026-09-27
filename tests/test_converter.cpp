@@ -4,7 +4,9 @@
 #include <iostream>
 #include <string>
 
+#include "codegen/CMakeGenerator.hpp"
 #include "codegen/CppGenerator.hpp"
+#include "codegen/ScriptsGenerator.hpp"
 #include "ir/Diagnostics.hpp"
 #include "scratch/ProjectSource.hpp"
 #include "scratch/ScratchDownloader.hpp"
@@ -168,6 +170,18 @@ int main() {
     checkContains(stageSrc, "broadcast(scratch::Value(std::string(\"go\")));", "broadcast literal");
     checkContains(sources.files.at("src/Project.cpp"), "runtime.createSprite<Sprite_Player_1>();", "sprite registration");
     checkContains(sources.files.at("src/main.cpp"), "config.gpuAccel = true;", "optional --gpu flag");
+
+    const std::string cmake = s2c::codegen::generateCMakeLists(project, sources.executableName, sources.sourceFiles);
+    checkContains(cmake, "Native CMake project: macOS, Windows, and Linux.", "generated cmake names three platforms");
+    checkContains(cmake, "if(WIN32)", "generated cmake has Windows branch");
+    checkContains(cmake, "SDL3::SDL3-shared", "generated cmake copies SDL on Windows");
+
+    const auto scripts = s2c::codegen::generateScripts(sources.executableName);
+    check(scripts.count("scripts/run.sh") == 1, "run.sh");
+    check(scripts.count("scripts/run.bat") == 1, "run.bat");
+    check(scripts.count("scripts/build.bat") == 1, "build.bat");
+    checkContains(scripts.at("scripts/run.bat"), sources.executableName + ".exe", "run.bat launches the exe");
+    checkContains(scripts.at("scripts/build.sh"), "find_exe", "build.sh locates multi-config binaries");
 
     bool sawPenWarning = false;
     for (const auto& d : diagnostics.all()) {

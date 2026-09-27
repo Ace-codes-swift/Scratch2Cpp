@@ -2,6 +2,8 @@
 
 Converts a Scratch 3 project into a standalone, buildable C++ project that uses SDL3.
 
+The converter **and** every generated project build natively on **macOS**, **Windows**, and **Linux** from the same CMake. There is no cross-compile step: run CMake on the machine you want the binary for. GitHub Actions builds both the converter and a transpiled sample on all three operating systems.
+
 The converter downloads a shared Scratch project (or reads a local `.sb3`), parses it into an intermediate representation, and emits a CMake project you can build and run without Scratch. Unsupported blocks produce a warning and conversion continues.
 
 ```
@@ -24,20 +26,31 @@ To **build a generated project**:
 - A C++20 compiler
 - SDL3 (found with `find_package(SDL3)`). If it is not installed, the generated CMakeLists downloads SDL 3.2.20 automatically (`SCRATCH_FETCH_SDL3`, on by default).
 
-macOS: `brew install cmake sdl3`. Linux: install `libsdl3-dev` (or let CMake fetch it). Windows: install SDL3 via vcpkg or let CMake fetch it.
+| | Converter | Generated game |
+|---|---|---|
+| **macOS** | CMake + Apple Clang (`xcode-select --install`). Optional: `brew install cmake curl`. | Same, plus SDL3 (`brew install sdl3`) or let CMake fetch it. Optional GPU: Metal. |
+| **Linux** | CMake + GCC or Clang. Optional: `libcurl4-openssl-dev`. | Same, plus `libsdl3-dev` (or fetch). Optional GPU: Vulkan if `vulkan/vulkan.h` is installed. |
+| **Windows** | CMake + Visual Studio 2022 (MSVC) or Ninja. Optional: libcurl / `curl.exe`. | Same, plus SDL3 via vcpkg or fetch. Optional GPU: Direct3D 11 (always linked). |
 
 ## Building the converter
 
+Same commands on every platform (`scripts/build.sh` / `scripts\build.bat` wrap them):
+
 ```sh
 cmake -S . -B build
-cmake --build build
-./build/scratch2cpp --help
+cmake --build build --config Release
 ```
+
+| Platform | Converter binary |
+|---|---|
+| macOS / Linux | `./build/scratch2cpp` |
+| Windows (Visual Studio) | `build\Release\scratch2cpp.exe` |
+| Windows (Ninja) | `build\scratch2cpp.exe` |
 
 Unit tests:
 
 ```sh
-ctest --test-dir build --output-on-failure
+ctest --test-dir build -C Release --output-on-failure
 ```
 
 ## Using it
@@ -79,20 +92,28 @@ Invalid URLs, unshared projects, Scratch 2 files, and failed downloads produce a
 
 ## Building a generated project
 
+Transpilation writes a normal CMake tree. Build that tree **on the OS you want to run**:
+
 ```sh
 cd "projects/Maze Starter"
 cmake -S . -B build
-cmake --build build
-./build/Maze_Starter
+cmake --build build --config Release
 ```
 
-Or use the wrappers:
-
-| Script | What it does |
+| Platform | Game binary |
 |---|---|
-| `scripts/build.sh [Release\|Debug]` / `scripts\build.bat` | Configure and build into `build/` |
-| `scripts/run.sh` | Build and launch |
-| `scripts/debug.sh` / `scripts\debug.bat` | Debug build into `build/debug`, then lldb or gdb |
+| macOS / Linux | `./build/Maze_Starter` |
+| Windows (Visual Studio) | `build\Release\Maze_Starter.exe` |
+| Windows (Ninja) | `build\Maze_Starter.exe` |
+
+Or use the wrappers (they look in both single-config and multi-config output dirs):
+
+| Script | Platform | What it does |
+|---|---|---|
+| `scripts/build.sh [Release\|Debug]` | macOS / Linux | Configure and build into `build/` |
+| `scripts/run.sh` | macOS / Linux | Build and launch |
+| `scripts/debug.sh` | macOS / Linux | Debug build into `build/debug`, then lldb or gdb |
+| `scripts\build.bat` / `scripts\run.bat` / `scripts\debug.bat` | Windows | The same, for cmd.exe |
 
 Generated apps accept:
 
@@ -146,7 +167,7 @@ These produce a warning of the form `Warning: Unsupported Scratch block "music_p
 - **Control:** the hidden Scratch 2 counter blocks
 - **Other:** comments on the stage, video, TurboWarp add-ons, Scratch 2 `.sb2` / `objName` projects
 
-Speech bubbles use SDL’s built-in debug font. SVG costumes are rasterised at 2× via nanosvg.
+Speech bubbles, monitors, and SVG costume text use a system TrueType font when one is available (Hiragino / Arial on macOS, Arial / Segoe on Windows, DejaVu / Noto on Linux). SVG costumes are rasterised at 2× via nanosvg.
 
 ## Planned TurboWarp support
 
@@ -169,7 +190,9 @@ src/ir/           intermediate representation + diagnostics
 src/codegen/      C++ / CMake / scripts / README emission
 src/utils/        log, HTTP, zip, filesystem, strings
 runtime/          SDL3 Scratch runtime (embedded into the converter)
-tests/            unit tests
+scripts/          converter build wrappers (macOS/Linux and Windows)
+tests/            unit tests + tiny.sb3 fixture used by CI
+.github/          GitHub Actions: converter + generated project on macOS, Windows, Linux
 third_party/      miniz, nlohmann/json
 tools/            embed_files (packs runtime/ into the converter binary)
 ```

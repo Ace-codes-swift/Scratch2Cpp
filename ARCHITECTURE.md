@@ -23,6 +23,7 @@ scratch.mit.edu URL / .sb3 file
         ▼
   standalone C++ / CMake / SDL3 project
   (generated sources + copied runtime/ + assets/)
+  native build on macOS, Windows, and Linux
 ```
 
 ## Why three layers

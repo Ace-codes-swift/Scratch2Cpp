@@ -1,7 +1,8 @@
 # Scratch runtime library used by generated projects.
 #
-# Depends only on SDL3. Image decoding (stb_image) and SVG rasterisation
-# (nanosvg) are vendored single-header libraries in third_party/.
+# Same sources on macOS, Windows, and Linux. Image decoding (stb_image) and
+# SVG rasterisation (nanosvg) are vendored single-header libraries.
+# Optional GPU: Metal (Apple), Vulkan (dynamic loader), Direct3D 11 (Windows).
 cmake_minimum_required(VERSION 3.21)
 
 add_library(scratch_runtime STATIC
@@ -26,16 +27,25 @@ add_library(scratch_runtime STATIC
 
 target_compile_features(scratch_runtime PUBLIC cxx_std_20)
 target_include_directories(scratch_runtime PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-target_link_libraries(scratch_runtime PUBLIC SDL3::SDL3)
+
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
+# Threads: std::thread in the CPU mesh tracer. CMAKE_DL_LIBS: dlopen of the
+# Vulkan loader on Linux/macOS (empty on Windows).
+target_link_libraries(scratch_runtime PUBLIC SDL3::SDL3 Threads::Threads ${CMAKE_DL_LIBS})
+
+if(WIN32)
+    target_compile_definitions(scratch_runtime PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+    if(MSVC)
+        target_compile_definitions(scratch_runtime PUBLIC _CRT_SECURE_NO_WARNINGS)
+    endif()
+    target_link_libraries(scratch_runtime PUBLIC d3d11 d3dcompiler)
+endif()
 
 if(APPLE)
     enable_language(OBJCXX)
     set_source_files_properties(scratch/GpuAccel.cpp PROPERTIES LANGUAGE OBJCXX)
     target_link_libraries(scratch_runtime PUBLIC "-framework Metal" "-framework Foundation")
-endif()
-
-if(WIN32)
-    target_link_libraries(scratch_runtime PUBLIC d3d11 d3dcompiler)
 endif()
 
 find_path(S2C_VULKAN_INCLUDE vulkan/vulkan.h

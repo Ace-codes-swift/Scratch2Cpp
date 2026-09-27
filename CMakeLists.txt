@@ -1,5 +1,8 @@
 # scratch2cpp - Scratch 3 -> C++/SDL3 converter.
 #
+# Builds natively on macOS, Windows, and Linux. Generated projects use the
+# same CMake on those three platforms (SDL3 is found or fetched).
+#
 # Dependencies: a C++20 compiler, CMake >= 3.21 and (optionally) libcurl.
 # nlohmann/json and miniz are vendored in third_party/. Without libcurl the
 # converter falls back to invoking the `curl` command line tool.
@@ -79,8 +82,15 @@ add_library(s2c_core STATIC
 )
 target_include_directories(s2c_core PUBLIC src)
 target_link_libraries(s2c_core PUBLIC miniz nlohmann_json)
+if(WIN32)
+    target_compile_definitions(s2c_core PUBLIC NOMINMAX WIN32_LEAN_AND_MEAN)
+    if(MSVC)
+        target_compile_definitions(s2c_core PUBLIC _CRT_SECURE_NO_WARNINGS)
+    endif()
+endif()
 if(MSVC)
     target_compile_options(s2c_core PRIVATE /W3 /utf-8 /bigobj)
+    target_compile_options(miniz PRIVATE /W3 /utf-8)
 else()
     target_compile_options(s2c_core PRIVATE -Wall -Wextra)
 endif()
@@ -98,6 +108,9 @@ endif()
 
 add_executable(scratch2cpp src/main.cpp)
 target_link_libraries(scratch2cpp PRIVATE s2c_core)
+if(MSVC)
+    target_compile_options(scratch2cpp PRIVATE /W3 /utf-8)
+endif()
 
 install(TARGETS scratch2cpp RUNTIME DESTINATION bin)
 

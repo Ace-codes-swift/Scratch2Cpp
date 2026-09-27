@@ -1,10 +1,11 @@
 // ScriptsGenerator.hpp - build/run/debug convenience scripts.
 //
-// The scripts are thin wrappers around CMake:
+// Unix (macOS / Linux):
 //   scripts/build.sh  [Release|Debug]   configure + build into build/
 //   scripts/run.sh                       build then launch
 //   scripts/debug.sh                     Debug build into build/debug, then lldb/gdb
-//   scripts/build.bat, scripts/debug.bat Windows equivalents
+// Windows:
+//   scripts/build.bat, scripts/run.bat, scripts/debug.bat
 #pragma once
 
 #include <map>

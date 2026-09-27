@@ -1,0 +1,93 @@
+# Build the converter and a transpiled sample on macOS, Windows, and Linux.
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest, ubuntu-latest]
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux packages
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            cmake ninja-build g++ pkg-config libcurl4-openssl-dev \
+            libasound2-dev libpulse-dev \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev \
+            libxinerama-dev libxss-dev \
+            libgl1-mesa-dev libegl1-mesa-dev \
+            libdbus-1-dev libudev-dev libwayland-dev libxkbcommon-dev \
+            fonts-dejavu-core
+
+      - name: Configure converter
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DS2C_BUILD_TESTS=ON
+
+      - name: Build converter
+        run: cmake --build build --config Release --parallel
+
+      - name: Test converter
+        run: ctest --test-dir build -C Release --output-on-failure
+
+      - name: Locate scratch2cpp
+        run: |
+          for p in \
+            build/scratch2cpp \
+            build/Release/scratch2cpp.exe \
+            build/Release/scratch2cpp \
+            build/Debug/scratch2cpp.exe
+          do
+            if [[ -f "$p" ]]; then
+              echo "S2C=$p" >> "$GITHUB_ENV"
+              echo "found $p"
+              exit 0
+            fi
+          done
+          echo "scratch2cpp binary not found"
+          find build -name 'scratch2cpp*' -print || true
+          exit 1
+
+      - name: Transpile sample project
+        run: |
+          "$S2C" --sb3 tests/fixtures/tiny.sb3 --output ./build/gen --name Tiny --force
+
+      - name: Build generated project
+        run: |
+          cmake -S ./build/gen/Tiny -B ./build/gen/Tiny/build -DCMAKE_BUILD_TYPE=Release
+          cmake --build ./build/gen/Tiny/build --config Release --parallel
+
+      - name: Run generated project (headless)
+        run: |
+          exe=""
+          for p in \
+            ./build/gen/Tiny/build/Tiny \
+            ./build/gen/Tiny/build/Release/Tiny.exe \
+            ./build/gen/Tiny/build/Release/Tiny \
+            ./build/gen/Tiny/build/Tiny.exe
+          do
+            if [[ -f "$p" ]]; then exe="$p"; break; fi
+          done
+          if [[ -z "$exe" ]]; then
+            echo "generated executable not found"
+            find ./build/gen/Tiny/build -maxdepth 3 -type f -print || true
+            exit 1
+          fi
+          SDL_VIDEODRIVER=dummy "$exe" --frames 2 --no-autostart

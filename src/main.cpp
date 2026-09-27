@@ -103,10 +103,11 @@ int main(int argc, char** argv) {
         s2c::log::info("Project generated at:");
         s2c::log::info(result.projectDir.string() + "/");
         s2c::log::info("");
-        s2c::log::info("Build it with:");
+        s2c::log::info("Build it with (macOS, Windows, or Linux):");
         s2c::log::info("  cd \"" + result.projectDir.string() + "\"");
-        s2c::log::info("  cmake -S . -B build && cmake --build build");
-        s2c::log::info("  ./build/" + result.executableName);
+        s2c::log::info("  cmake -S . -B build && cmake --build build --config Release");
+        s2c::log::info("  ./build/" + result.executableName + "   (Windows: build\\Release\\" +
+                      result.executableName + ".exe)");
         return 0;
     } catch (const s2c::ConversionError& e) {
         s2c::log::error(e.what());
