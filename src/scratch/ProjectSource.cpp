@@ -1,5 +1,8 @@
 #include "scratch/ProjectSource.hpp"
 
+#include <algorithm>
+#include <cctype>
+
 #include "scratch/Sb3Archive.hpp"
 #include "scratch/ScratchDownloader.hpp"
 #include "utils/Error.hpp"
@@ -22,7 +25,8 @@ std::unique_ptr<ProjectSource> createProjectSource(const std::string& input) {
     if (str::endsWith(lower, ".sb3")) {
         return std::make_unique<Sb3FileSource>(trimmed);
     }
-    if (ScratchWebSource::looksLikeScratchUrl(trimmed) || std::all_of(trimmed.begin(), trimmed.end(), ::isdigit)) {
+    if (ScratchWebSource::looksLikeScratchUrl(trimmed) ||
+        std::all_of(trimmed.begin(), trimmed.end(), [](unsigned char c) { return std::isdigit(c); })) {
         std::optional<std::string> id = ScratchWebSource::extractProjectId(trimmed);
         if (!id) {
             throw ConversionError("Could not find a project id in \"" + trimmed +

@@ -20,7 +20,11 @@ std::string generateCMakeLists(const ir::Project& project, const std::string& ex
     cm += "# SDL3 is located with find_package(SDL3). If it is not installed and\n";
     cm += "# SCRATCH_FETCH_SDL3 is ON (default), SDL3 is downloaded and built from source.\n";
     cm += "cmake_minimum_required(VERSION 3.21)\n";
-    cm += "project(" + executableName + " LANGUAGES C CXX)\n\n";
+    cm += "project(" + executableName + " LANGUAGES C CXX)\n";
+    cm += "if(APPLE)\n";
+    cm += "    # Metal backend is Objective-C++. enable_language must run here, not in runtime/.\n";
+    cm += "    enable_language(OBJCXX)\n";
+    cm += "endif()\n\n";
     cm += "set(CMAKE_CXX_STANDARD 20)\n";
     cm += "set(CMAKE_CXX_STANDARD_REQUIRED ON)\n";
     cm += "set(CMAKE_CXX_EXTENSIONS OFF)\n";

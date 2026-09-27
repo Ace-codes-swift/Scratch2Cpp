@@ -43,7 +43,8 @@ if(WIN32)
 endif()
 
 if(APPLE)
-    enable_language(OBJCXX)
+    # OBJCXX is enabled by the generated top-level CMakeLists (required; doing it
+    # from this subdirectory leaves CMAKE_OBJCXX_COMPILE_OBJECT unset).
     set_source_files_properties(scratch/GpuAccel.cpp PROPERTIES LANGUAGE OBJCXX)
     target_link_libraries(scratch_runtime PUBLIC "-framework Metal" "-framework Foundation")
 endif()

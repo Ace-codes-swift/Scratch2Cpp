@@ -89,6 +89,12 @@ struct Block {
 struct Script {
     BlockPtr hat;                  // event_whenflagclicked, procedures_definition, ...
     Sequence body;
+
+    Script() = default;
+    Script(Script&&) noexcept = default;
+    Script& operator=(Script&&) noexcept = default;
+    Script(const Script&) = delete;
+    Script& operator=(const Script&) = delete;
 };
 
 struct Variable {
@@ -154,6 +160,12 @@ struct Target {
         for (const auto& l : lists) if (l.id == id) return &l;
         return nullptr;
     }
+
+    Target() = default;
+    Target(Target&&) noexcept = default;
+    Target& operator=(Target&&) noexcept = default;
+    Target(const Target&) = delete;
+    Target& operator=(const Target&) = delete;
 };
 
 // A stage watcher (variable, list, or slider) from project.json "monitors".
@@ -194,6 +206,12 @@ struct Project {
         for (const auto& t : targets) if (!t.isStage && t.name == name) return &t;
         return nullptr;
     }
+
+    Project() = default;
+    Project(Project&&) noexcept = default;
+    Project& operator=(Project&&) noexcept = default;
+    Project(const Project&) = delete;
+    Project& operator=(const Project&) = delete;
 };
 
 }  // namespace s2c::ir

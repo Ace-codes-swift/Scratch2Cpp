@@ -173,6 +173,7 @@ int main() {
 
     const std::string cmake = s2c::codegen::generateCMakeLists(project, sources.executableName, sources.sourceFiles);
     checkContains(cmake, "Native CMake project: macOS, Windows, and Linux.", "generated cmake names three platforms");
+    checkContains(cmake, "enable_language(OBJCXX)", "generated cmake enables OBJCXX on Apple");
     checkContains(cmake, "if(WIN32)", "generated cmake has Windows branch");
     checkContains(cmake, "SDL3::SDL3-shared", "generated cmake copies SDL on Windows");
 

@@ -1,6 +1,7 @@
 // Tests for Scratch value casting / operator semantics in the runtime.
 #include <cmath>
 #include <iostream>
+#include <limits>
 #include <string>
 
 #include "scratch/List.hpp"
@@ -37,7 +38,7 @@ int main() {
     checkEq(Value(1e-7).toString(), std::string("1e-7"), "1e-7");
     checkEq(Value(123456789012.0).toString(), std::string("123456789012"), "large int");
     checkEq(Value(0.5).toString(), std::string("0.5"), "0.5");
-    checkEq(Value(1.0 / 0.0).toString(), std::string("Infinity"), "Infinity");
+    checkEq(Value(std::numeric_limits<double>::infinity()).toString(), std::string("Infinity"), "Infinity");
 
     // String -> number follows JavaScript Number().
     checkEq(Value("  42 ").toNumber(), 42.0, "trimmed number");
